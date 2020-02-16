@@ -1,0 +1,216 @@
+#!/bin/sh /etc/rc.common
+#
+# Copyright (C) 2015 OpenWrt-dist
+# Copyright (C) 2016 Chen RuiWei <crwbak@gmail.com>
+#
+# This is free software, licensed under the GNU General Public License v3.
+# See /LICENSE for more information.
+#
+START=99
+STOP=15
+
+CONFIG=koolproxy
+LOCK_FILE=/var/lock/$CONFIG.lock
+
+config_n_get() {
+	local ret=$(uci get $CONFIG.$1.$2 2>/dev/null)
+	echo ${ret:=$3}
+}
+
+config_t_get() {
+	local index=0
+	[ -n "$4" ] && index=$4
+	local ret=$(uci get $CONFIG.@$1[$index].$2 2>/dev/null)
+	echo ${ret:=$3}
+}
+
+factor(){
+	if [ -z "$1" ] || [ -z "$2" ]; then
+		echo ""
+	else
+		echo "$2 $1"
+	fi
+}
+
+load_acl() {
+	local ip
+	local mac
+	local mode
+	config_get ip $1 ipaddr
+	config_get mac $1 macaddr
+	config_get mode $1 filter_mode
+	if [ -n "$mode" ] && [ -n "$ip" ] || [ -n "$mac" ]; then
+		iptables -t nat -A KOOLPROXY $(factor $ip "-s") $(factor $mac "-m mac --mac-source") -$(get_jump_mode $mode) $(get_action_chain $mode)
+	fi
+}
+
+load_config() {
+	ENABLED=$(config_t_get global enabled 0)
+	[ $ENABLED -ne 1 ] && return 1
+	GLOBAL_MODE=$(config_t_get global filter_mode adblock)
+	LOCAL_PORT=3000
+	config_load $CONFIG
+	return 0
+}
+
+get_action_chain() {
+	case "$1" in
+		disable)
+			echo "RETURN"
+		;;
+		global)
+			echo "KOOLPROXY_GLO"
+		;;
+		video)
+			echo "KOOLPROXY_VIDEO"
+		;;
+		adblock)
+			echo "KOOLPROXY_ADB"
+		;;
+		global_https)
+			echo "KOOLPROXY_GLO_HTTPS"
+		;;
+		video_https)
+			echo "KOOLPROXY_GLO_HTTPS"
+		;;
+		adblock_https)
+			echo "KOOLPROXY_ADB_HTTPS"
+		;;
+	esac
+}
+
+get_jump_mode() {
+	case "$1" in
+		disable)
+			echo "j"
+		;;
+		*)
+			echo "g"
+		;;
+	esac
+}
+
+add_rule() {
+	#防止重复添加规则
+	iptables -t nat -C PREROUTING -j KOOLPROXY 2>/dev/null && [ $? -eq 0 ] && return 2
+	#创建所需的ipset
+	IPSET_ADB="adblock"
+	ipset -! create $IPSET_ADB iphash && ipset -! add $IPSET_ADB 110.110.110.110
+	
+	#生成代理规则
+	iptables -t nat -N KOOLPROXY
+	#获取默认规则行号
+	BL_INDEX=`iptables -t nat -L PREROUTING|tail -n +3|sed -n -e '/^BLACKLIST/='`
+	[ -n "$BL_INDEX" ] && let RULE_INDEX=$BL_INDEX+1
+	#确保添加到默认规则之前
+	iptables -t nat -I PREROUTING $RULE_INDEX -j KOOLPROXY
+	#  忽略特殊IP段
+	iptables -t nat -A KOOLPROXY -d 0.0.0.0/8 -j RETURN
+	iptables -t nat -A KOOLPROXY -d 10.0.0.0/8 -j RETURN
+	iptables -t nat -A KOOLPROXY -d 127.0.0.0/8 -j RETURN
+	iptables -t nat -A KOOLPROXY -d 169.254.0.0/16 -j RETURN
+	iptables -t nat -A KOOLPROXY -d 172.16.0.0/12 -j RETURN
+	iptables -t nat -A KOOLPROXY -d 192.168.0.0/16 -j RETURN
+	iptables -t nat -A KOOLPROXY -d 224.0.0.0/4 -j RETURN
+	iptables -t nat -A KOOLPROXY -d 240.0.0.0/4 -j RETURN
+	#  生成对应CHAIN
+	iptables -t nat -N KOOLPROXY_GLO
+	iptables -t nat -A KOOLPROXY_GLO -p tcp --dport 80 -j REDIRECT --to $LOCAL_PORT
+#	iptables -t nat -N KOOLPROXY_VIDEO
+#	iptables -t nat -A KOOLPROXY_VIDEO -p tcp --dport 80 -j REDIRECT --to $LOCAL_PORT
+	iptables -t nat -N KOOLPROXY_ADB
+	iptables -t nat -A KOOLPROXY_ADB -p tcp --dport 80 -m set --match-set $IPSET_ADB dst -j REDIRECT --to $LOCAL_PORT
+	iptables -t nat -N KOOLPROXY_GLO_HTTPS
+	iptables -t nat -A KOOLPROXY_GLO_HTTPS -p tcp -m multiport --dport 80,443 -j REDIRECT --to $LOCAL_PORT
+#	iptables -t nat -N KOOLPROXY_VIDEO_HTTPS
+#	iptables -t nat -A KOOLPROXY_VIDEO_HTTPS -p tcp -m multiport --dport 80,443 -j REDIRECT --to $LOCAL_PORT
+	iptables -t nat -N KOOLPROXY_ADB_HTTPS
+	iptables -t nat -A KOOLPROXY_ADB_HTTPS -p tcp -m multiport --dport 80,443 -m set --match-set $IPSET_ADB dst -j REDIRECT --to $LOCAL_PORT
+	#  SS扩展对接
+	iptables -t nat -N SHADOWSOCKS_EXT 2>/dev/null
+	iptables -t nat -N KOOLPROXY_EXT 2>/dev/null
+	iptables -t nat -A KOOLPROXY_EXT -m ttl --ttl-eq 160 -j SHADOWSOCKS_EXT
+	iptables -t nat -I OUTPUT -j KOOLPROXY_EXT
+	#加载ACLS
+	config_foreach load_acl acl_rule
+	#加载默认代理模式
+	iptables -t nat -A KOOLPROXY -j $(get_action_chain $GLOBAL_MODE)
+}
+
+del_rule() {
+	iptables -t nat -D PREROUTING -j KOOLPROXY 2>/dev/null
+	iptables -t nat -F KOOLPROXY 2>/dev/null && iptables -t nat -X KOOLPROXY 2>/dev/null
+	iptables -t nat -D OUTPUT -j KOOLPROXY_EXT 2>/dev/null
+	iptables -t nat -F KOOLPROXY_EXT 2>/dev/null && iptables -t nat -X KOOLPROXY_EXT 2>/dev/null
+	iptables -t nat -F KOOLPROXY_GLO 2>/dev/null && iptables -t nat -X KOOLPROXY_GLO 2>/dev/null
+#	iptables -t nat -F KOOLPROXY_VIDEO 2>/dev/null && iptables -t nat -X KOOLPROXY_VIDEO 2>/dev/null
+	iptables -t nat -F KOOLPROXY_ADB 2>/dev/null && iptables -t nat -X KOOLPROXY_ADB 2>/dev/null
+	iptables -t nat -F KOOLPROXY_GLO_HTTPS 2>/dev/null && iptables -t nat -X KOOLPROXY_GLO_HTTPS 2>/dev/null
+#	iptables -t nat -F KOOLPROXY_VIDEO_HTTPS 2>/dev/null && iptables -t nat -X KOOLPROXY_VIDEO_HTTPS 2>/dev/null
+	iptables -t nat -F KOOLPROXY_ADB_HTTPS 2>/dev/null && iptables -t nat -X KOOLPROXY_ADB_HTTPS 2>/dev/null
+}
+
+add_dns() {
+	if [ ! -f "/tmp/dnsmasq.d/adblock.dns" ]; then
+		mkdir -p /tmp/dnsmasq.d
+		ln -s /usr/share/koolproxy/data/adblock.dns /tmp/dnsmasq.d/adblock.dns
+		/etc/init.d/dnsmasq restart
+	fi
+}
+
+del_dns() {
+	if [ $NO_DEL_DNS ]; then
+		return
+	fi
+	if [ -f "/tmp/dnsmasq.d/adblock.dns" ]; then
+		rm /tmp/dnsmasq.d/adblock.dns
+		/etc/init.d/dnsmasq restart
+	fi
+}
+
+start() {
+	! load_config && return 1
+	#防止并发
+	{
+		flock -x 802
+		{
+			/usr/share/koolproxy/koolproxy -d --mark --ttl 160
+			add_dns
+			add_rule
+		}
+		flock -u 802
+	} 802<>"$LOCK_FILE"
+	return 0
+}
+
+stop() {
+	#防止并发
+	{
+		flock -x 802
+		{
+			del_rule
+			del_dns
+			kill -9 $(ps|grep '/usr/share/koolproxy/koolproxy'|grep -v 'grep'|awk '{print$1}') 2>/dev/null
+		}
+		flock -u 802
+	} 802<>"$LOCK_FILE"
+}
+
+restart() {
+	NO_DEL_DNS=true
+	stop
+	start
+}
+
+fw_reload() {
+	#防止并发
+	{
+		flock -x 802
+		{
+			del_rule
+			! load_config && return 1
+			add_rule
+		}
+		flock -u 802
+	} 802<>"$LOCK_FILE"
+}
