@@ -1,0 +1,94 @@
+
+config interface 'loopback'
+	option ifname 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+	option ula_prefix 'fd94:29b2:7fb0::/48'
+
+config interface 'lan'
+	option type 'bridge'
+	option ifname 'eth0'
+	option proto 'static'
+	option netmask '255.255.255.0'
+	option ip6assign '60'
+	option ipaddr '192.168.250.254'
+
+config interface 'wan'
+	option ifname 'eth1'
+	option _orig_ifname 'eth1'
+	option _orig_bridge 'false'
+	option proto 'pppoe'
+	option ipv6 'auto'
+	option metric '40'
+	option username '055194526346'
+	option password '131824'
+
+config interface 'wan6'
+	option ifname 'eth1'
+	option proto 'dhcpv6'
+	option reqaddress 'try'
+	option reqprefix 'auto'
+
+config switch
+	option name 'switch0'
+	option reset '1'
+	option enable_vlan '1'
+
+config switch_vlan
+	option device 'switch0'
+	option vlan '1'
+	option ports '0 1 2 3 5'
+
+config switch_vlan
+	option device 'switch0'
+	option vlan '2'
+	option ports '4 6'
+
+config device 'macvlandev_macvlan1'
+	option name 'macvlan1'
+	option ifname 'eth1'
+	option type 'macvlan'
+
+config interface 'vwan1'
+	option proto 'pppoe'
+	option username '055194526346'
+	option password '131824'
+	option metric '41'
+	option _orig_ifname 'macvlan1'
+	option _orig_bridge 'false'
+	option ifname 'eth1'
+	option ipv6 'auto'
+
+config device 'macvlandev_macvlan2'
+	option name 'macvlan2'
+	option ifname 'eth1'
+	option type 'macvlan'
+
+config interface 'vwan2'
+	option proto 'pppoe'
+	option username '055194526346'
+	option password '131824'
+	option metric '42'
+	option _orig_ifname 'macvlan2'
+	option _orig_bridge 'false'
+	option ifname 'eth1'
+	option ipv6 'auto'
+
+config device 'macvlandev_macvlan3'
+	option name 'macvlan3'
+	option ifname 'eth1'
+	option type 'macvlan'
+
+config interface 'vwan3'
+	option proto 'pppoe'
+	option username '055194526346'
+	option password '131824'
+	option metric '43'
+	option _orig_ifname 'macvlan3'
+	option _orig_bridge 'false'
+	option ifname 'eth1'
+	option ipv6 'auto'
+

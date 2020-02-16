@@ -1,0 +1,14 @@
+
+config server_config
+	option server_port '8388'
+	option server_ipv6 '::'
+	option protocol 'origin'
+	option password 'hello'
+	option dns_ipv6 '0'
+	option obfs 'plain'
+	option fast_open '0'
+	option encrypt_method 'aes-128-cfb'
+	option server '0.0.0.0'
+	option timeout '300'
+	option enable '1'
+

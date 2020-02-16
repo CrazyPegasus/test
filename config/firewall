@@ -1,0 +1,257 @@
+
+config defaults
+	option syn_flood '1'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+
+config zone
+	option name 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option network 'lan eMdorm'
+
+config zone
+	option name 'wan'
+	option output 'ACCEPT'
+	option masq '1'
+	option mtu_fix '1'
+	option input 'ACCEPT'
+	option forward 'ACCEPT'
+	option network 'wan vwan1 vwan1 vwan2 vwan3 vwan1 vwan2 vwan3 vwan1 vwan2 vwan3 wan6'
+
+config forwarding
+	option src 'lan'
+	option dest 'wan'
+
+config rule
+	option name 'Allow-DHCP-Renew'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
+
+config rule
+	option name 'Allow-Ping'
+	option src 'wan'
+	option proto 'icmp'
+	option icmp_type 'echo-request'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IGMP'
+	option src 'wan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-DHCPv6'
+	option src 'wan'
+	option proto 'udp'
+	option src_ip 'fc00::/6'
+	option dest_ip 'fc00::/6'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-MLD'
+	option src 'wan'
+	option proto 'icmp'
+	option src_ip 'fe80::/10'
+	list icmp_type '130/0'
+	list icmp_type '131/0'
+	list icmp_type '132/0'
+	list icmp_type '143/0'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Input'
+	option src 'wan'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Forward'
+	option src 'wan'
+	option dest '*'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config include
+	option path '/etc/firewall.user'
+
+config rule
+	option src 'wan'
+	option dest 'lan'
+	option proto 'esp'
+	option target 'ACCEPT'
+
+config rule
+	option src 'wan'
+	option dest 'lan'
+	option dest_port '500'
+	option proto 'udp'
+	option target 'ACCEPT'
+
+config rule
+	option enabled '1'
+	option target 'ACCEPT'
+	option proto 'tcp udp'
+	option dest_port '1194'
+	option name 'openvpn'
+	option src 'wan'
+
+config zone
+	option name 'vpnzone'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option masq '1'
+	option mtu_fix '1'
+	option network 'vpn vpn0'
+
+config forwarding
+	option dest 'wan'
+	option src 'vpnzone'
+
+config forwarding
+	option dest 'lan'
+	option src 'vpnzone'
+
+config include
+	option type 'script'
+	option path '/usr/lib/gargoyle_firewall_util/gargoyle_additions.firewall'
+	option family 'IPv4'
+	option reload '1'
+
+config include 'miniupnpd'
+	option type 'script'
+	option path '/usr/share/miniupnpd/firewall.include'
+	option family 'any'
+	option reload '1'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp udp'
+	option src_dport '18921'
+	option dest_ip '192.168.250.254'
+	option dest_port '21'
+	option name 'vsftpd21'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp udp'
+	option src_dport '18920'
+	option dest_ip '192.168.250.254'
+	option dest_port '20'
+	option name 'vsftpd20'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp udp'
+	option src_dport '18910'
+	option dest_ip '192.168.250.254'
+	option dest_port '80'
+	option name 'Lede-remote'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp udp'
+	option dest_ip '192.168.250.201'
+	option dest_port '5000'
+	option name 'nas_remote'
+	option src_dport '18520'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp udp'
+	option src_dport '18522'
+	option dest_ip '192.168.250.201'
+	option dest_port '5002'
+	option name 'nas_photo'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp udp'
+	option dest_port '3389'
+	option name 'win_remote'
+	option src_dport '18918'
+	option dest_ip '192.168.250.197'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp'
+	option src_dport '5900'
+	option dest_ip '192.168.250.197'
+	option dest_port '5900'
+	option name 'Macos'
+
+config include 'koolproxy'
+	option type 'script'
+	option path '/usr/share/koolproxy/firewall.include'
+	option family 'any'
+	option reload '1'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp udp'
+	option src_dport '18912'
+	option dest_ip '192.168.250.254'
+	option dest_port '18912'
+	option name 'Forward18912'
+
+config redirect
+	option target 'DNAT'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'tcp udp'
+	option src_dport '51514'
+	option dest_ip '192.168.250.254'
+	option dest_port '51514'
+	option name 'SSR'
+	option enabled '0'
+

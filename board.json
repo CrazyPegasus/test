@@ -1,0 +1,106 @@
+{
+	"model": {
+		"id": "armada-385-linksys-shelby",
+		"name": "Linksys WRT1900ACS"
+	},
+	"led": {
+		"wan": {
+			"name": "WAN",
+			"type": "netdev",
+			"sysfs": "pca963x:shelby:white:wan",
+			"device": "eth1",
+			"mode": "link tx rx"
+		},
+		"usb1": {
+			"name": "USB 1",
+			"type": "usbport",
+			"sysfs": "pca963x:shelby:white:usb2",
+			"ports": [
+				"usb1-port1"
+			]
+		},
+		"usb2": {
+			"name": "USB 2",
+			"type": "usbport",
+			"sysfs": "pca963x:shelby:white:usb3_1",
+			"ports": [
+				"usb2-port1",
+				"usb3-port1"
+			]
+		},
+		"usb2_ss": {
+			"name": "USB 2 SS",
+			"type": "usbport",
+			"sysfs": "pca963x:shelby:white:usb3_2",
+			"ports": [
+				"usb3-port1"
+			]
+		}
+	},
+	"network": {
+		"lan": {
+			"ifname": "eth0",
+			"protocol": "static"
+		},
+		"wan": {
+			"ifname": "eth1",
+			"protocol": "dhcp"
+		}
+	},
+	"switch": {
+		"switch0": {
+			"enable": true,
+			"reset": true,
+			"ports": [
+				{
+					"num": 0,
+					"role": "lan",
+					"index": 4
+				},
+				{
+					"num": 1,
+					"role": "lan",
+					"index": 3
+				},
+				{
+					"num": 2,
+					"role": "lan",
+					"index": 2
+				},
+				{
+					"num": 3,
+					"role": "lan",
+					"index": 1
+				},
+				{
+					"num": 5,
+					"device": "eth0",
+					"need_tag": false,
+					"want_untag": false
+				},
+				{
+					"num": 4,
+					"role": "wan"
+				},
+				{
+					"num": 6,
+					"device": "eth1",
+					"need_tag": false,
+					"want_untag": false
+				}
+			],
+			"roles": [
+				{
+					"role": "lan",
+					"ports": "0 1 2 3 5",
+					"device": "eth0"
+				},
+				{
+					"role": "wan",
+					"ports": "4 6",
+					"device": "eth1"
+				}
+			]
+		}
+	}
+}

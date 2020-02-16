@@ -1,0 +1,11 @@
+
+config base 'base'
+	option time '10'
+	option enable '1'
+	option interface 'pppoe-wan'
+	option main_domain 'weibs.win'
+	option app_key 'LTAIXpoo1FVVYnvM'
+	option app_secret 'U8ob8cKR7TCpmdql1nGG7P2vBWajhq'
+	option sub_domain 'www'
+	option record_id '3852367899957248'
+

@@ -1,0 +1,6 @@
+
+config dropbear
+	option PasswordAuth 'on'
+	option Port '18912'
+	option GatewayPorts 'on'
+

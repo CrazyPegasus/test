@@ -1,0 +1,115 @@
+
+config network
+	option init 'network'
+	list affects 'dhcp'
+	list affects 'radvd'
+
+config wireless
+	list affects 'network'
+
+config firewall
+	option init 'firewall'
+	list affects 'luci-splash'
+	list affects 'qos'
+	list affects 'miniupnpd'
+
+config olsr
+	option init 'olsrd'
+
+config dhcp
+	option init 'dnsmasq'
+	list affects 'odhcpd'
+
+config odhcpd
+	option init 'odhcpd'
+
+config dropbear
+	option init 'dropbear'
+
+config httpd
+	option init 'httpd'
+
+config fstab
+	option init 'fstab'
+
+config qos
+	option init 'qos'
+
+config system
+	option init 'led'
+	list affects 'luci_statistics'
+
+config luci_splash
+	option init 'luci_splash'
+
+config upnpd
+	option init 'miniupnpd'
+
+config ntpclient
+	option init 'ntpclient'
+
+config samba
+	option init 'samba'
+
+config tinyproxy
+	option init 'tinyproxy'
+
+config adbyby
+	option init 'adbyby'
+
+config aria2
+	option init 'aria2'
+
+config hd-idle
+	option init 'hd-idle'
+
+config kcptun
+	option init 'kcptun'
+
+config minidlna 'minidlna'
+
+config p910nd
+	option init 'p910nd'
+
+config luci_statistics
+	option init 'luci_statistics'
+
+config transmission
+	option init 'transmission'
+
+config aliddns
+	option init 'aliddns'
+
+config cpulimit
+	option init 'cpulimit'
+
+config arpbind
+	option init 'arpbind'
+
+config n2n_v2
+	option init 'n2n_v2'
+
+config pptpd
+	option init 'pptpd'
+
+config qos_gargoyle
+	option init 'qos_gargoyle'
+
+config shadowvpn
+	option init 'shadowvpn'
+
+config syncdial
+	option exec '/bin/genwancfg'
+
+config vsftpd
+	option init 'vsftpd'
+
+config xunlei
+	option init 'xunlei'
+
+config mwan3
+	option exec '/usr/sbin/mwan3 restart'
+
+config koolproxy
+	option init 'koolproxy'
+

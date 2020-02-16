@@ -1,0 +1,9 @@
+
+config syncdial 'config'
+	option dialnum '1'
+	option dialwait '25'
+	option old_frame '0'
+	option dialchk '1'
+	option enabled '1'
+	option wannum '3'
+
